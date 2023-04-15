@@ -28,8 +28,9 @@ class TasksController extends Controller
     public function store(StoreTaskRequest $request)
     {
         $request->validated();
+
         $task = Task::create([
-            'user_id' => Auh::user()->id,
+            'user_id' => Auth::user()->id,
             'name' => $request->name,
             'description' => $request->description,
             'priority' => $request->priority
@@ -57,16 +58,30 @@ class TasksController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request,  Task $task)
     {
-        //
+        if(Auth::user()->id !== $task->user_id){
+            return $this->error('', 'You are not authorised to perform this request', 403);
+        }
+
+        $task->update($request->all());
+
+        return new TasksResource($task);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Task $task)
     {
-        //
+        return $this->isNotAuthorized($task) ? $this->isNotAuthorized($task) : $task->delete();
+    }
+
+    private function isNotAuthorized($task)
+    {
+        if(Auth::user()->id !== $task->user_id)
+        {
+            return $this->error('', 'You are not authorised to perform this request', 403);
+        }
     }
 }
